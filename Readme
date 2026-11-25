@@ -1,0 +1,62 @@
+# Retouche Pictures Pro : éditeur d'images Android, sans pub ni réseau
+
+Kotlin + Jetpack Compose. Tout se passe sur le téléphone.
+
+## Ouvrir et lancer
+
+1. Installe **Android Studio** (version récente, Koala ou plus).
+2. `File > Open` et choisis ce dossier (`retouche`). Laisse la synchronisation Gradle se faire (internet nécessaire **pour compiler**, pas pour utiliser l'app).
+3. Branche ton téléphone (débogage USB activé) et clique sur ▶ pour tester.
+4. APK installable : `Build > Build Bundle(s) / APK(s) > Build APK(s)`, en choisissant la variante *release* (elle est signée avec la clé de debug, suffisant pour un usage perso).
+
+> Le dossier ne contient pas `gradlew` (je n'ai pas pu le générer). Android Studio n'en a pas besoin. Pour la ligne de commande, lance une fois `gradle wrapper` si Gradle est installé.
+
+## Confidentialité : comment c'est garanti
+
+- Le manifeste ne déclare **aucune permission**, en particulier pas `INTERNET` : Android empêche l'application de toucher au réseau.
+- Aucune bibliothèque de pub, d'analytics ou de crash reporting.
+- Ouvrir/enregistrer passe par le sélecteur de fichiers Android (pas d'accès global aux photos).
+- `allowBackup="false"`.
+- Vérification : Android Studio, onglet *Merged Manifest* de `AndroidManifest.xml`, doit n'afficher aucun `uses-permission`.
+
+## Fonctions (barre du bas : 6 familles, puis les outils de la famille)
+
+| Famille | Outils |
+|---|---|
+| **Dessiner** | Pinceau (crayon, stylo, feutre, surligneur, aérographe), Gomme, Remplir (pot), Pipette, Formes (ligne, flèche, rectangle, ellipse, rempli ou non) |
+| **Retoucher** | Tampon (clonage), Correcteur (efface une tache), Flou au doigt, Pixelliser au doigt (visages, plaques) |
+| **Réglages** | Luminosité, contraste, saturation, chaleur, netteté, vignettage ; 9 filtres en un geste avec intensité |
+| **Ajouter** | Texte (police, gras, italique, contour, ombre, couleur), Image sur image (déplacer, agrandir/tourner à deux doigts, opacité, miroir) |
+| **Découper** | Recadrer (ratios, A4), Sélection (rectangle, ellipse, libre : copier, couper/déplacer, effacer, remplir, flouter, pixelliser, recadrer), Fond transparent (IA, baguette, affiner le contour, nouveau fond couleur / image / photo floutée), pinceau Restaurer |
+| **Calques** | Liste avec miniatures, œil, nouveau, dupliquer, monter/descendre, fusionner, opacité, modes de fusion |
+
+Roue dentée : ouvrir, nouvelle image, enregistrer (PNG/JPEG/WebP), changer la taille (avatar, icônes, fond d'écran, A4, etc.), pivoter, miroir, rogner, À propos.
+Texte, images ajoutées et sélections coupées sont des **calques** : on peut les déplacer ou les modifier à tout moment. Annuler/rétablir couvre tout.
+
+## Détourage IA hors ligne
+
+- Moteur : ONNX Runtime. Modèle livré : **u2netp.onnx** (≈ 4,5 Mo, fichier `app/src/main/assets/`), licence Apache 2.0 (projet U²-Net, fichier récupéré depuis les publications du projet *rembg*).
+- Pour une meilleure qualité (plus lourd), ajoute dans le même dossier un de ces fichiers ; le plus précis présent est utilisé automatiquement :
+  `isnet-general-use.onnx` (≈ 170 Mo, le meilleur), `u2net.onnx` (≈ 170 Mo), `silueta.onnx` (≈ 43 Mo).
+  Source : <https://github.com/danielgatis/rembg/releases/tag/v0.0.0>
+- Fonctionne mieux sur un sujet net (personne, objet, produit). Les finitions se font avec la gomme ou la baguette.
+
+## Structure du code
+
+- `Model.kt` : calques, document, sélection, formes.
+- `Compositor.kt` : assemblage des calques (écran, export, miniatures).
+- `DocOps.kt` : recadrage, rotation, miroir, redimensionnement sur tous les calques.
+- `Fx.kt` : réglages, filtres, flou, pixellisation, netteté, correcteur, affinage de contour, formes, sélection.
+- `ImageOps.kt` : pinceaux, remplissage, baguette, texte, outils de base.
+- `BgRemover.kt` : détourage par réseau de neurones. `ImageIO.kt` : ouverture / enregistrement.
+- `EditorViewModel.kt` : état, outils, historique. `EditorScreen.kt` : interface Compose et gestes.
+
+## Limites connues
+
+- Images importées ramenées à 4096 px max sur le plus grand côté (fluidité et mémoire).
+- Pot de peinture : sur des bords très adoucis, augmente la tolérance pour éviter un liseré.
+- Je n'ai pas pu compiler ni tester sur appareil : si Android Studio signale une erreur à la première compilation, envoie-moi le message et je corrige.
+
+## Idées pour la suite
+
+Calques, flou/pixelisation, formes (ligne, rectangle, cercle), dégradés, réglages luminosité/contraste.
